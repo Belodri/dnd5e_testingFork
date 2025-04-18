@@ -1054,37 +1054,18 @@ async function applyAction(event) {
   if ( !effect ) return;
   event.stopPropagation();
 
-  let duration;
-  if (event.shiftKey) {
-    const {DialogV2} = foundry.applications.api;
-
-    const selectDurationGroup = new foundry.data.fields.NumberField({
-      label: "Duration in s",
-      required: true,
-      min: 1,
-      integer: true,
-      nullable: true,
-      initial: null
-    }).toFormGroup({}, {name: "duration"}).outerHTML;
-
-    const result = await DialogV2.prompt({
-      window: {
-        title: `${effect.name} Duration`
-      },
-      content: selectDurationGroup,
-      modal: true,
-      rejectClose: false,
-      ok: {
-        label: "Ok",
-        callback: (event, button) => new FormDataExtended(button.form).object
-      }
-    });
-
-    if (result?.duration > 0) duration = result.duration;
-  }
+  /**
+   * A hook event that fires before a status effect is toggled via an enricher.
+   * @function dnd5e.enricherToggleStatus
+   * @memberof hookEvents
+   * @param {string} statusId       A status effect ID defined in CONFIG.statusEffects
+   * @param {PointerEvent} event    The triggering event.
+   * @returns {boolean}             Explicitly return `false` to prevent status from being toggled.
+   */
+  if (Hooks.call("dnd5e.enricherToggleStatus", effect.id, event) === false) return;
 
   for ( const token of canvas.tokens.controlled ) {
-    await token.actor.toggleStatusEffect(effect.id, {chosenDuration: duration});
+    await token.actor.toggleStatusEffect(effect.id);
   }
 }
 
